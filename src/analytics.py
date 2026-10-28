@@ -2,7 +2,7 @@ import pandas as pd
 from src.database import get_db_engine
 
 def run_financial_diagnostics(engine):
-    print("📊 Fetching data from sales_analytics_view...\n")
+    print("Fetching data from sales_analytics_view...\n")
     
     # 1. الاستعلام الأول: تقييم المتاجر وحساب هامش الربح المئوي
     store_query = """
@@ -19,7 +19,7 @@ def run_financial_diagnostics(engine):
     ORDER BY total_profit DESC;
     """
     df_stores = pd.read_sql(store_query, engine)
-    print("=== 🏪 1. Store Performance Ranking ===")
+    print("=== 1. Store Performance Ranking ===")
     print(df_stores.to_string(index=False))
     print("\n" + "-"*65 + "\n")
 
@@ -38,7 +38,7 @@ def run_financial_diagnostics(engine):
     ORDER BY profit_difference DESC;
     """
     df_promo = pd.read_sql(promo_product_query, engine)
-    print("=== 🏷️ 2. Promotion Impact by Product (Daily Avg Profit) ===")
+    print("=== 2. Promotion Impact by Product (Daily Avg Profit) ===")
     print(df_promo.to_string(index=False))
     print("\n" + "-"*65 + "\n")
 

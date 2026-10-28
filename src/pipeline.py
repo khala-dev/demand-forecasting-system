@@ -7,7 +7,7 @@ def seed_dimensions(engine):
     with engine.connect() as conn:
         store_count = conn.execute(text("SELECT COUNT(*) FROM stores;")).scalar()
         if store_count > 0:
-            print("ℹ️ Dimension tables already contain data. Skipping seeding.")
+            print("Dimension tables already contain data. Skipping seeding.")
             return
 
     stores_data = [
@@ -28,7 +28,7 @@ def seed_dimensions(engine):
 
     df_stores.to_sql("stores", engine, if_exists="append", index=False)
     df_products.to_sql("products", engine, if_exists="append", index=False)
-    print(f"✅ Successfully inserted {len(df_stores)} stores and {len(df_products)} products!")
+    print(f"Successfully inserted {len(df_stores)} stores and {len(df_products)} products!")
 
 
 def generate_and_seed_sales(engine):
@@ -36,10 +36,10 @@ def generate_and_seed_sales(engine):
     with engine.connect() as conn:
         sales_count = conn.execute(text("SELECT COUNT(*) FROM daily_sales;")).scalar()
         if sales_count > 0:
-            print(f"ℹ️ daily_sales already contains {sales_count} rows. Skipping generation.")
+            print(f"ℹdaily_sales already contains {sales_count} rows. Skipping generation.")
             return
 
-    print("⏳ Generating 2 years of realistic daily sales data...")
+    print("Generating 2 years of realistic daily sales data...")
     np.random.seed(42)  # لتثبيت العشوائية والحصول على نفس النتائج دائماً
 
     # 2. قراءة المتاجر والمنتجات مع الـ IDs الخاصة بها من PostgreSQL
@@ -94,7 +94,7 @@ def generate_and_seed_sales(engine):
     # 4. تحويل القائمة إلى DataFrame وضخها في PostgreSQL على دفعات
     df_sales = pd.DataFrame(records)
     df_sales.to_sql("daily_sales", engine, if_exists="append", index=False, chunksize=1000)
-    print(f"✅ Successfully generated and inserted {len(df_sales)} daily sales records!")
+    print(f"Successfully generated and inserted {len(df_sales)} daily sales records!")
 
 
 if __name__ == "__main__":
