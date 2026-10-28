@@ -6,7 +6,6 @@ from src.database import get_db_engine
 
 
 def load_sales_data(engine):
-    # 1. سحب البيانات مرتبة حسب المتجر، المنتج، ثم التاريخ
     query = """
     SELECT 
         sale_date,
@@ -29,31 +28,28 @@ def load_sales_data(engine):
 def create_time_features(df):
     df = df.copy()
 
-    # 2. تحويل التاريخ إلى أرقام (رقم اليوم في الأسبوع، الشهر، وهل هو ويكاند)
+    # تحويل التاريخ إلى أرقام (رقم اليوم في الأسبوع، الشهر، وهل هو ويكاند)
     df["day_of_week"] = df["sale_date"].dt.dayofweek
     df["month"] = df["sale_date"].dt.month
     df["day_of_year"] = df["sale_date"].dt.dayofyear
     df["is_weekend"] = df["day_of_week"].isin([4, 5]).astype(int)
     df["is_promotion"] = df["is_promotion"].astype(int)
 
-    # 3. إزاحة المبيعات بسطر (lag_1) وبـ 7 أسطر (lag_7) لكل منتج في كل متجر وحده
+    # إزاحة المبيعات بسطر (lag_1) وبـ 7 أسطر (lag_7) لكل منتج في كل متجر وحده
     grp = df.groupby(["store_id", "product_id"])["units_sold"]
     df["lag_1"] = grp.shift(1)
     df["lag_7"] = grp.shift(7)
     df["rolling_mean_7"] = grp.shift(1).rolling(window=7).mean()
 
-    # 4. حذف الصفوف الأولى التي تحتوي على خانات فارغة (NaN)
     df = df.dropna().reset_index(drop=True)
     return df
 
 
 def train_and_evaluate(df, engine):
-    # 5. تقسيم البيانات: التدريب قبل نوفمبر 2025، والاختبار في نوفمبر وديسمبر 2025
     cutoff_date = "2025-11-01"
     train_df = df[df["sale_date"] < cutoff_date]
     test_df = df[df["sale_date"] >= cutoff_date].copy()
 
-    # الأعمدة المساعدة (المعطيات) والعمود الهدف (المطلوب توقعه)
     feature_cols = [
         "store_id",
         "product_id",
@@ -73,7 +69,6 @@ def train_and_evaluate(df, engine):
     X_train, y_train = train_df[feature_cols], train_df[target_col]
     X_test, y_test = test_df[feature_cols], test_df[target_col]
 
-    # 6. تدريب النموذج ثم التنبؤ بمبيعات الشهرين الأخيرين
     print(f"[INFO]Training model on {len(train_df)} rows (up to {cutoff_date})...")
     model = HistGradientBoostingRegressor(max_iter=200, learning_rate=0.05, random_state=42)
     model.fit(X_train, y_train)
@@ -81,7 +76,6 @@ def train_and_evaluate(df, engine):
     raw_predictions = model.predict(X_test)
     test_df["predicted_units"] = np.maximum(0, np.round(raw_predictions)).astype(int)
 
-    # 7. حساب الدقة ومقارنة المخزون المتوقع بالحقيقي لكل منتج
     mae = mean_absolute_error(y_test, test_df["predicted_units"])
     r2 = r2_score(y_test, test_df["predicted_units"])
 
@@ -98,7 +92,6 @@ def train_and_evaluate(df, engine):
     print("===[INFO] Inventory Forecast vs Actual Demand (Nov - Dec 2025) ===")
     print(summary.to_string(index=False))
 
-    # 8. حفظ جدول التوقعات في PostgreSQL لاستعماله في الواجهة النهائية
     output_cols = [
         "sale_date",
         "store_id",

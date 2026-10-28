@@ -4,7 +4,6 @@ from src.database import get_db_engine
 def run_financial_diagnostics(engine):
     print("Fetching data from sales_analytics_view...\n")
     
-    # 1. الاستعلام الأول: تقييم المتاجر وحساب هامش الربح المئوي
     store_query = """
     SELECT 
         store_name,
@@ -23,7 +22,6 @@ def run_financial_diagnostics(engine):
     print(df_stores.to_string(index=False))
     print("\n" + "-"*65 + "\n")
 
-    # 2. الاستعلام الثاني: مقارنة ربح كل منتج (بدون تخفيض vs مع تخفيض) جنب لجنب
     promo_product_query = """
     SELECT 
         product_name,

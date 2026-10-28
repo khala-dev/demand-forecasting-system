@@ -32,7 +32,7 @@ def seed_dimensions(engine):
 
 
 def generate_and_seed_sales(engine):
-    # 1. حماية ضد التكرار: التحقق مما إذا كان جدول المبيعات معمراً من قبل
+    # حماية ضد التكرار: التحقق مما إذا كان جدول المبيعات معمراً من قبل
     with engine.connect() as conn:
         sales_count = conn.execute(text("SELECT COUNT(*) FROM daily_sales;")).scalar()
         if sales_count > 0:
@@ -40,13 +40,11 @@ def generate_and_seed_sales(engine):
             return
 
     print("Generating 2 years of realistic daily sales data...")
-    np.random.seed(42)  # لتثبيت العشوائية والحصول على نفس النتائج دائماً
-
-    # 2. قراءة المتاجر والمنتجات مع الـ IDs الخاصة بها من PostgreSQL
+    np.random.seed(42) 
+    
     df_stores = pd.read_sql("SELECT store_id, store_type FROM stores;", engine)
     df_products = pd.read_sql("SELECT product_id, category, base_price FROM products;", engine)
 
-    # 3. إنشاء محور الزمن (سنتين: 2024 و 2025)
     dates = pd.date_range(start="2024-01-01", end="2025-12-31", freq="D")
 
     store_multipliers = {"Flagship": 1.8, "Standard": 1.0, "Express": 0.6}
@@ -54,9 +52,8 @@ def generate_and_seed_sales(engine):
 
     for current_date in dates:
         day_of_year = current_date.dayofyear
-        is_weekend = current_date.weekday() in [4, 5]  # الجمعة والسبت
-
-        # حساب درجة الحرارة الموسمية (تكون دافئة في الصيف وباردة في الشتاء)
+        is_weekend = current_date.weekday() in [4, 5]  
+        
         seasonal_wave = np.sin(2 * np.pi * (day_of_year - 105) / 365.25)
         base_temp = 22.0 + 10.0 * seasonal_wave
 
@@ -66,14 +63,11 @@ def generate_and_seed_sales(engine):
 
             for _, prod in df_products.iterrows():
                 base_price = float(prod["base_price"])
-                # المنتجات الرخيصة تباع بكميات يومية أكبر طبيعياً من المنتجات الغالية
                 base_demand = 25.0 if base_price < 40 else 12.0
 
-                # احتمال 15% وجود عرض ترويجي (تخفيض 20% في السعر)
                 is_promo = bool(np.random.rand() < 0.15)
                 selling_price = round(base_price * 0.80, 2) if is_promo else base_price
 
-                # تجميع العوامل المؤثرة على الطلب
                 weekend_factor = 1.30 if is_weekend else 1.0
                 promo_factor = 1.55 if is_promo else 1.0
                 season_factor = 1.0 + 0.15 * seasonal_wave
@@ -91,7 +85,6 @@ def generate_and_seed_sales(engine):
                     "temperature_c": daily_temp,
                 })
 
-    # 4. تحويل القائمة إلى DataFrame وضخها في PostgreSQL على دفعات
     df_sales = pd.DataFrame(records)
     df_sales.to_sql("daily_sales", engine, if_exists="append", index=False, chunksize=1000)
     print(f"Successfully generated and inserted {len(df_sales)} daily sales records!")
